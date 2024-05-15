@@ -2,21 +2,30 @@
 
 The traditional LinUCB Disjoint algorithm is a contextual bandit algorithm commonly used in recommender systems. Our project implements the traditional LinUCB Disjoint algorithm with tunable alpha parameters to simulate LinUCB policies, evaluate their performance, and visualize the results.
 
+
+
+## Files
+- **LinUCB_Dynamic_Alpha.ipynb**: Contains input values for different alpha and compares the results of the two algorithms in a single simulation and plotting.
+- **50_simulation_comparison.ipynb**: Contains input alpha = 0.25 and compares the results of the two algorithms in 50 times simulations and plotting.
+- **code.py**: Contains all code that can be executed locally: comparisons of the original LinUCB Disjointed and LinUCB Disjointed with dynamic alpha.
+
 ## Requirements
-
 The following Python libraries are required to run the code:
-1. numpy
-2. pandas
-3. matplotlib
-4. time
+- `numpy`
+- `pandas`
+- `matplotlib`
+- `time`
+- `scikit-learn`
 
-## Installation
- Install these libraries using pip:
- 1. Open Terminal
- 2. Enter the following command:
-  `pip install numpy pandas matplotlib`
+You can install these libraries using pip:
+```sh
 
- ## Operation
-  1. Open Terminal
-  2. Change the directory to the current folder
-  3. Enter the following command: `python code.py` or `python3 code.py`
+pip install numpy pandas matplotlib scikit-learn
+```
+
+
+ ## Operation 
+  1. Download all files
+  2. Open Terminal
+  3. Change the directory to the current folder
+  4. Enter the following command: `python code.py` or `python3 code.py`
