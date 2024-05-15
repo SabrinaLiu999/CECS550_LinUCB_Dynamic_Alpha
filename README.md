@@ -19,4 +19,4 @@ The following Python libraries are required to run the code:
  ## Operation
   1. Open Terminal
   2. Change the directory to the current folder
-  3. Enter the following command: `python LinUCB.py` or `python3 LinUCB.py`
+  3. Enter the following command: `python code.py` or `python3 code.py`
