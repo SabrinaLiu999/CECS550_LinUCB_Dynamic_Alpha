@@ -791,5 +791,157 @@ result_compare_disjoint_adjust_alpha_2 = plot_compare_fixed_dynamic_alpha(simula
                                                                           title = "High exploration", 
                                                                           fix_alpha_simulation_results = simulation_disjoint_alpha_2)
 
+
+
+def multi_run_simulation(alpha, K_arms, d, epochs, top_movies_index, filtered_data_original, steps_printout=5000, evaluation_interval=1000):
+    disjoint_ctr = []
+    disjoint_ctr_adjust_alpha = []
+    alpha_history_list = []
+    runtimes_fixed_alpha = []
+    runtimes_adjust_alpha = []
+    
+    # Run the simulation 10 times
+    for i in range(50):
+        # Shuffling data order based on random seed
+        np.random.seed(i)
+        filtered_data = filtered_data_original.reindex(np.random.permutation(filtered_data_original.index)).reset_index(drop=True)
+        
+        # disjoint_ctr_adjust_alpha policy
+        simulation_disjoint_adjust_alpha = linucb_disjoint_adjust_alpha_simulator(K_arms=n, 
+                                                                                  d=d,
+                                                                                  initial_alpha=alpha, 
+                                                                                  epochs=epochs, 
+                                                                                  top_movies_index=top_movies_index, 
+                                                                                  steps_printout=steps_printout,
+                                                                                  evaluation_interval=evaluation_interval)
+        
+        disjoint_ctr_adjust_alpha.append(simulation_disjoint_adjust_alpha["aligned_ctr"])
+        alpha_history_list.append(simulation_disjoint_adjust_alpha["alpha_history"])
+        # Assuming simulation_disjoint_adjust_alpha is populated from a function, check if 'runtime' is in the dictionary
+        if 'runtime' in simulation_disjoint_adjust_alpha:
+            runtimes_adjust_alpha.append(simulation_disjoint_adjust_alpha['runtime'])
+        else:
+            # Handle the case where 'runtime' is not available
+            print("Runtime data is missing from the simulation results.")
+            runtimes_adjust_alpha.append(None)  # Or handle appropriately, maybe with a default value or a specific error handling routine
+        
+        # Disjoint policy
+        simulation_disjoint_alpha = ctr_disjoint_simulator(K_arms=n, 
+                                                           d=d,
+                                                           alpha=alpha, 
+                                                           epochs=epochs, 
+                                                           top_movies_index=top_movies_index, 
+                                                           steps_printout=steps_printout)
+        disjoint_ctr.append(simulation_disjoint_alpha["aligned_ctr"])
+        runtimes_fixed_alpha.append(simulation_disjoint_alpha["runtime"])
+
+    # Find min time step
+    min_len = 5000
+
+    # Determine the minimum length of time steps
+    for i in range(50):
+        if len(disjoint_ctr_adjust_alpha[i]) < min_len or len(disjoint_ctr[i]) < min_len:
+            min_len = min(len(disjoint_ctr_adjust_alpha[i]), len(disjoint_ctr[i]))
+
+    # Initiate list for storing shortened ctr based on the min time steps
+    shorten_disjoint_ctr_adjust_alpha = []
+    shorten_disjoint_ctr = []
+
+    for i in range(50):
+        # Shortening all ctr to common time steps
+        shorten_disjoint_ctr_adjust_alpha.append(disjoint_ctr_adjust_alpha[i][:min_len])
+        shorten_disjoint_ctr.append(disjoint_ctr[i][:min_len])
+
+    # Calculate the average CTRs
+    avg_disjoint_ctr_adjust_alpha = np.array(shorten_disjoint_ctr_adjust_alpha).mean(axis=0)
+    avg_disjoint_ctr = np.array(shorten_disjoint_ctr).mean(axis=0)
+
+    # Calculate the average alpha history
+    alpha_history_lengths = [len(history) for history in alpha_history_list]
+    max_alpha_history_length = max(alpha_history_lengths)
+    avg_alpha_history = np.zeros(max_alpha_history_length)
+    count_alpha_history = np.zeros(max_alpha_history_length)
+
+    for history in alpha_history_list:
+        for j, alpha in enumerate(history):
+            avg_alpha_history[j] += alpha
+            count_alpha_history[j] += 1
+
+    avg_alpha_history = avg_alpha_history / count_alpha_history
+    runtimes_fixed_alpha_all = sum(runtimes_fixed_alpha)
+    runtimes_adjust_alpha_all = sum(runtimes_adjust_alpha)
+
+    return {
+        "avg_disjoint_ctr_adjust_alpha": avg_disjoint_ctr_adjust_alpha,
+        "avg_disjoint_ctr": avg_disjoint_ctr,
+        "avg_alpha_history": avg_alpha_history,
+        "runtimes_fixed_alpha_all": runtimes_fixed_alpha_all,
+        "runtimes_adjust_alpha_all": runtimes_adjust_alpha_all
+    }
+
+results_025_10 = multi_run_simulation(alpha=0.25, 
+                         K_arms=n, 
+                         d=29, 
+                         epochs=2, 
+                         top_movies_index=top_movies_index, 
+                         filtered_data_original=pd.DataFrame())
+
+
+print("All CTR 50 times run fixed alpha = 0.25: ")
+print(results_025_10["avg_disjoint_ctr"])
+
+print("All CTR 50 times run dyniamic alpha")
+print(results_025_10["avg_disjoint_ctr_adjust_alpha"])
+
+print("CTR 50 times run fixed alpha = 0.25: ",np.mean(results_025_10["avg_disjoint_ctr"]))
+print("runtime:",results_025_10["runtimes_fixed_alpha_all"])
+
+print("CTR 50 times run dyniamic",np.mean(results_025_10["avg_disjoint_ctr_adjust_alpha"]))
+print("runtime:",results_025_10["runtimes_adjust_alpha_all"])
+
+
+def plot_simulation_results(avg_disjoint_ctr, avg_disjoint_ctr_adjust_alpha, avg_alpha_history, reward_mean, alpha_value, ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 6))
+    else:
+        fig = ax.figure
+
+    # Plot avg_disjoint_ctr with dynamic alpha value in the label
+    ax.axhline(reward_mean, label="Reward Mean", color="violet")
+    ax.plot(avg_disjoint_ctr, label=f'Disjoint CTR (alpha={alpha_value})', color='green')
+    ax.plot(avg_disjoint_ctr_adjust_alpha, label='Disjoint CTR with Adjusted Alpha', color='blue')
+
+    # Set labels and title
+    ax.set_xlabel('Time Steps')
+    ax.set_ylabel('CTR and Alpha', color='blue')
+    ax.tick_params(axis='y', labelcolor='blue')
+
+    # Plot alpha_history
+    alpha_points = len(avg_alpha_history)
+    max_index = len(avg_disjoint_ctr_adjust_alpha)
+    interp_indices = np.linspace(0, max_index - 1, alpha_points).astype(int)
+    ax.plot(interp_indices, avg_alpha_history, label='Alpha History', color='red', linestyle='dashed')
+
+    # Add scatter points and annotations to alpha_history
+    for i, alpha in enumerate(avg_alpha_history):
+        interval_index = interp_indices[i]
+        y_value = avg_alpha_history[i]
+        ax.scatter(interval_index, y_value, color='red')  # Add scatter point
+        ax.annotate(f'{alpha:.3f}', (interval_index, y_value), 
+                     textcoords="offset points", xytext=(0,10), ha='center', fontsize=8, color='red')
+
+    # Add legend and title
+    ax.legend()
+    fig.tight_layout()
+    fig.suptitle("Comparison of Disjoint Policies with Fixed and Adjusted Alpha", y=1.05)
+    ax.show(block=False)
+
+
+plot_simulation_results_025_10 = plot_simulation_results(avg_disjoint_ctr=results_025_10["avg_disjoint_ctr"], 
+                                                         avg_disjoint_ctr_adjust_alpha=results_025_10["avg_disjoint_ctr_adjust_alpha"], 
+                                                         avg_alpha_history=results_025_10["avg_alpha_history"],
+                                                         reward_mean=reward_mean, 
+                                                         alpha_value = 0.25)
+
 # show all plots
 plt.show()
