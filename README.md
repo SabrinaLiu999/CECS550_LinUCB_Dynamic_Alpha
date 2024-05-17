@@ -10,6 +10,7 @@ The traditional LinUCB Disjoint algorithm is a contextual bandit algorithm commo
 - **code.py**: Contains all code that can be executed locally: comparisons of the original LinUCB Disjointed and LinUCB Disjointed with dynamic alpha.
 
 ## Requirements
+Environment, Python 3.8
 The following Python libraries are required to run the code:
 - `numpy`
 - `pandas`
@@ -27,5 +28,5 @@ pip install numpy pandas matplotlib scikit-learn
  ## Operation 
   1. Download all files
   2. Open Terminal
-  3. Change the directory to the current folder
-  4. Enter the following command: `python code.py` or `python3 code.py`
+  3. Change the directory to the folder code.py belongs to folder
+  4. Enter the following command: `python code.py`
